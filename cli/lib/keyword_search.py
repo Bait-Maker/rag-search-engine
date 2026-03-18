@@ -1,15 +1,15 @@
 import string
-from .search_utils import DEFAULT_SEARCH_LIST, load_movies
+from .search_utils import DEFAULT_SEARCH_LIST, load_movies, load_stopwords
 
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIST, ) -> list[dict]:
     movies = load_movies()
     results = []
     for movie in movies:
-        preprocessed_query = tokenize_text(query)
-        preprocessed_title = tokenize_text(movie["title"])
-        isMatching = hasMatchingToken(preprocessed_query, preprocessed_title)
-        if isMatching:
+        query_tokens = tokenize_text(query)
+        title_tokens = tokenize_text(movie["title"])
+        is_matching = has_matching_token(query_tokens, title_tokens)
+        if is_matching:
             results.append(movie)
             if len(results) >= limit:
                 break
@@ -17,7 +17,7 @@ def search_command(query: str, limit: int = DEFAULT_SEARCH_LIST, ) -> list[dict]
     return results
 
 
-def hasMatchingToken(query_tokens: list[str], title_tokens: list[str]) -> bool:
+def has_matching_token(query_tokens: list[str], title_tokens: list[str]) -> bool:
     for query_token in query_tokens:
         for title_token in title_tokens:
             if query_token in title_token:
@@ -36,4 +36,10 @@ def tokenize_text(text: str) -> list[str]:
     for token in tokens:
         if token:
             valid_tokens.append(token)
-    return valid_tokens
+
+    stopwords = load_stopwords()
+    filtered_tokens = []
+    for word in valid_tokens:
+        if word not in stopwords:
+            filtered_tokens.append(word)
+    return filtered_tokens

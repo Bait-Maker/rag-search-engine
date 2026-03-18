@@ -4,20 +4,36 @@ from .search_utils import DEFAULT_SEARCH_LIST, load_movies
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIST, ) -> list[dict]:
     movies = load_movies()
-    result = []
+    results = []
     for movie in movies:
-        preprocessed_query = preprocess_text(query)
-        preprocess_title = preprocess_text(movie["title"])
-        if preprocessed_query in preprocess_title:
-            result.append(movie)
+        preprocessed_query = tokenize_text(query)
+        preprocessed_title = tokenize_text(movie["title"])
+        isMatching = hasMatchingToken(preprocessed_query, preprocessed_title)
+        if isMatching:
+            results.append(movie)
+            if len(results) >= limit:
+                break
 
-        if len(result) >= limit:
-            break
+    return results
 
-    return result
 
+def hasMatchingToken(query_tokens: list[str], title_tokens: list[str]) -> bool:
+    for query_token in query_tokens:
+        for title_token in title_tokens:
+            if query_token in title_token:
+                return True
+    return False
 
 def preprocess_text(text: str) -> str:
     text = text.lower()
     text = text.translate(str.maketrans("", "", string.punctuation))
     return text
+
+def tokenize_text(text: str) -> list[str]:
+    text = preprocess_text(text)
+    tokens = text.split(" ")
+    valid_tokens = []
+    for token in tokens:
+        if token:
+            valid_tokens.append(token)
+    return valid_tokens

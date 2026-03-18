@@ -1,4 +1,4 @@
 {
   "python.analysis.extraPaths": ["./cli/lib"],
-  "cSpell.words": ["STOPWORD", "stopwords"]
+  "cSpell.words": ["docmap", "STOPWORD", "stopwords"]
 }

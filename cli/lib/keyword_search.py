@@ -1,7 +1,7 @@
 import string
 import os
 import pickle
-from collections import defaultdict
+from collections import Counter, defaultdict
 from nltk.stem import PorterStemmer
 from .search_utils import CACHE_DIR, DEFAULT_SEARCH_LIST, load_movies, load_stopwords
 
@@ -21,8 +21,10 @@ class InvertedIndex:
     def __init__(self):
         self.index = defaultdict(set)
         self.docmap: dict[int, dict] = {}
+        self.term_frequencies: dict[int, Counter] = {}
         self.index_path = os.path.join(CACHE_DIR, "index.pkl")
         self.docmap_path = os.path.join(CACHE_DIR, "docmap.pkl")
+        self.term_frequencies_path = os.path.join(CACHE_DIR, "term_frequencies.pkl")
 
 
     def build(self):
@@ -33,6 +35,7 @@ class InvertedIndex:
             doc_description = f"{movie["title"]} {movie["description"]}"
             self.docmap[doc_id] = movie
             self.__add_document(doc_id, doc_description)
+
 
     def save(self):
         """
@@ -49,6 +52,9 @@ class InvertedIndex:
             pickle.dump(self.index, file)
         with open(self.docmap_path, "wb") as file:
             pickle.dump(self.docmap, file)
+        with open(self.term_frequencies_path, "wb") as file:
+            pickle.dump(self.term_frequencies, file)
+
 
     def load(self):
         if not os.path.isfile(self.index_path) and not os.path.isfile(self.docmap_path):
@@ -56,10 +62,10 @@ class InvertedIndex:
         
         with open(self.index_path, "rb") as file:
             self.index = pickle.load(file)
-
         with open(self.docmap_path, "rb") as file:
             self.docmap = pickle.load(file)
-
+        with open(self.term_frequencies_path, "rb") as file:
+            self.term_frequencies = pickle.load(file)
 
 
     def get_documents(self, term: str) -> list:
@@ -73,6 +79,30 @@ class InvertedIndex:
         text_tokens = tokenize_text(text)
         for token in set(text_tokens):
             self.index[token].add(doc_id)
+        self.term_frequencies[doc_id] = Counter(text_tokens)
+
+    def get_tf(self, doc_id, term):
+        term_token = tokenize_text(term)
+        if len(term_token) > 1:
+            raise ValueError("Can not have more than one token")
+        term_count = self.term_frequencies.get(doc_id)
+        if not term_count:
+            return 0
+
+        return term_count[term_token[0]]
+
+
+def tf_command(doc_id: int, term: str):
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except ValueError as e:
+        print("Failed to load inverted index: ", e)
+
+    count = idx.get_tf(doc_id, term)
+
+    # print(f"{term}: {count}")
+    print(count)
 
 
 def build_command() -> None:
@@ -82,7 +112,7 @@ def build_command() -> None:
     idx = InvertedIndex()
     idx.build()
     idx.save()
-    print("Inverted Index created and saved successfully")
+    print("Inverted Index built successfully")
 
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIST, ) -> list[dict]:

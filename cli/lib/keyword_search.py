@@ -92,17 +92,7 @@ class InvertedIndex:
         return term_count[term_token[0]]
 
 
-def tf_command(doc_id: int, term: str):
-    idx = InvertedIndex()
-    try:
-        idx.load()
-    except ValueError as e:
-        print("Failed to load inverted index: ", e)
 
-    count = idx.get_tf(doc_id, term)
-
-    # print(f"{term}: {count}")
-    print(count)
 
 
 def build_command() -> None:
@@ -171,3 +161,17 @@ def tokenize_text(text: str) -> list[str]:
 
     return stemmed_tokens
 
+
+def tf_command(doc_id: int, term: str):
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except ValueError as e:
+        print("Failed to load inverted index: ", e)
+
+    count = idx.get_tf(doc_id, term)
+
+    print(count)
+
+def idf_command(term: str):
+    pass

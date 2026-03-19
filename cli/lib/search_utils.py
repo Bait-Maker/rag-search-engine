@@ -24,7 +24,7 @@ def load_movies() -> list[dict]:
     {
         "id": 2,
         "title": "The Thing",
-        "description": "American researchers in Antarctica discover and alien life form..."
+        "description": "American researchers in Antarctica discover..."
     }
     ```"""
     with open(DATA_PATH, "r",) as file:

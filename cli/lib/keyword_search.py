@@ -7,6 +7,16 @@ from .search_utils import CACHE_DIR, DEFAULT_SEARCH_LIST, load_movies, load_stop
 
 
 class InvertedIndex:
+    """**index**: tokens -> set(document IDs) 
+    ```
+    "matrix": [1, 2, 3],
+    "bomb": [4, 3, 7]
+    ```
+    **docmap**: ID -> Doc Object
+    ```
+    1: {"id": 1, "title": "title", "description": "description"},
+    2: {"id": 2, "title": "title2", "description": "description2"}
+    ```"""
 
     def __init__(self):
         self.index = defaultdict(set)
@@ -45,14 +55,14 @@ class InvertedIndex:
             raise ValueError("index.pkl or docmap.pkl does not exist")
         
         with open(self.index_path, "rb") as file:
-            index_doc = pickle.load(file)
+            self.index = pickle.load(file)
 
         with open(self.docmap_path, "rb") as file:
-            docmap_doc = pickle.load(file)
+            self.docmap = pickle.load(file)
 
 
 
-    def get_documents(self, term: str):
+    def get_documents(self, term: str) -> list:
         '''Gets the set of document IDs for a given token,\n 
         **@returns** list of the document IDs, sorted in ascending order.
         '''
@@ -66,21 +76,32 @@ class InvertedIndex:
 
 
 def build_command() -> None:
+    """Build the Inverted Index of movies.json and save to disk:\n
+    **Save Location:** (cache/docmap.pkl & cache/index.pkl)
+    """
     idx = InvertedIndex()
     idx.build()
     idx.save()
-
+    print("Inverted Index created and saved successfully")
 
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIST, ) -> list[dict]:
-    movies = load_movies()
-    results = []
-    for movie in movies:
-        query_tokens = tokenize_text(query)
-        title_tokens = tokenize_text(movie["title"])
-        is_matching = has_matching_token(query_tokens, title_tokens)
-        if is_matching:
-            results.append(movie)
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except ValueError as e:
+        print("Failed to load inverted index: ", e)
+
+    seen, results = set(), []
+    query_tokens = tokenize_text(query)
+    for token in query_tokens:
+        matching_doc_ids = idx.get_documents(token)
+        for doc_id in matching_doc_ids:
+            if doc_id in seen:
+                continue
+            seen.add(doc_id)
+            doc = idx.docmap[doc_id]
+            results.append(doc)
             if len(results) >= limit:
                 break
 

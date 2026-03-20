@@ -60,9 +60,9 @@ class InvertedIndex:
     def load(self):
         """Load assigns the index and docmap dicts with their respected files\n
         `@throws ValueError` if index.pkl or docmap.pkl files don't exist"""
-        if not os.path.isfile(self.index_path) and not os.path.isfile(self.docmap_path):
+        if not os.path.isfile(self.index_path) or not os.path.isfile(self.docmap_path):
             raise ValueError("index.pkl or docmap.pkl does not exist")
-        
+
         with open(self.index_path, "rb") as file:
             self.index = pickle.load(file)
         with open(self.docmap_path, "rb") as file:
@@ -93,22 +93,34 @@ class InvertedIndex:
             return 0
 
         return term_count[term_token[0]]
-    
+
     def get_idf(self, term: str):
         """returns the inverse document frequency score for a given term"""
         tokens = tokenize_text(term)
         if len(tokens) != 1:
             raise ValueError("term must be a single token")
-        
-        doc_count = len(self.docmap)
-        match_count = len(self.index.get(tokens[0], set()))
-        return math.log((doc_count + 1) / (match_count + 1))
-    
+
+        doc_total = len(self.docmap)
+        document_frequency = len(self.index.get(tokens[0], set()))
+        return math.log((doc_total + 1) / (document_frequency + 1))
+
     def get_tf_idf(self, doc_id: int, term: str):
         """returns the product of tf and idf"""
         tf = self.get_tf(doc_id, term)
         idf = self.get_idf(term)
         return tf * idf
+
+    def get_bm25_idf(self, term: str):
+        tokens = tokenize_text(term)
+        if len(tokens) != 1:
+            raise ValueError("Term cannot be more than one token")
+
+        token = tokens[0]
+        doc_count = len(self.docmap)
+        df = len(self.index[token])
+
+        # Formula = log((N - df + 0.5) / (df + 0.5) + 1)
+        return math.log((doc_count - df + 0.5) / (df + 0.5) + 1)
 
 
 def build_command() -> None:
@@ -204,3 +216,12 @@ def tf_idf_command(doc_id: int, term: str):
         print("Failed to load inverted index: ", e)
 
     return idx.get_tf_idf(doc_id, term)
+
+def bm25_idf_command(term: str):
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except ValueError as e:
+        print("Failed to load inverted index: ", e)
+
+    return idx.get_bm25_idf(term)

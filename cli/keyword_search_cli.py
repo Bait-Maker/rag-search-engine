@@ -2,7 +2,7 @@
 
 import argparse
 
-from lib.keyword_search import build_command, idf_command, search_command, tf_command, tf_idf_command
+from lib.keyword_search import build_command, idf_command, bm25_idf_command, search_command, tf_command, tf_idf_command
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
@@ -29,6 +29,11 @@ def main() -> None:
     tfxIdf_parser.add_argument("doc_id", type=int, help="document id to use for tf score")
     tfxIdf_parser.add_argument("term", type=str, help="Term to get tfIdf for")
 
+    bm25_idf_paerser = subparsers.add_parser(
+        "bm25idf", help="Calculate the mb25idf score for a given term"
+    )
+    bm25_idf_paerser.add_argument("term", type=str, help="Term to get the mb25idf for")
+
     args = parser.parse_args()
 
     match args.command:
@@ -51,7 +56,9 @@ def main() -> None:
         case "tfidf":
             tf_idf = tf_idf_command(args.doc_id, args.term)
             print(f"TF-IDF score of '{args.term}' in document '{args.doc_id}': {tf_idf:.2f}")
-
+        case "bm25idf":
+            bm25idf = bm25_idf_command(args.term)
+            print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
         case _:
             parser.print_help()
 

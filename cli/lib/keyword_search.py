@@ -1,3 +1,4 @@
+import math
 import string
 import os
 import pickle
@@ -57,6 +58,8 @@ class InvertedIndex:
 
 
     def load(self):
+        """Load assigns the index and docmap dicts with their respected files\n
+        `@throws ValueError` if index.pkl or docmap.pkl files don't exist"""
         if not os.path.isfile(self.index_path) and not os.path.isfile(self.docmap_path):
             raise ValueError("index.pkl or docmap.pkl does not exist")
         
@@ -90,8 +93,16 @@ class InvertedIndex:
             return 0
 
         return term_count[term_token[0]]
-
-
+    
+    def get_idf(self, term: str):
+        """returns the inverse document frequency score for a given term"""
+        tokens = tokenize_text(term)
+        if len(tokens) != 1:
+            raise ValueError("term must be a single token")
+        
+        doc_count = len(self.docmap)
+        match_count = len(self.index.get(tokens[0], set()))
+        return math.log((doc_count + 1) / (match_count + 1))
 
 
 
@@ -142,7 +153,7 @@ def preprocess_text(text: str) -> str:
 
 def tokenize_text(text: str) -> list[str]:
     text = preprocess_text(text)
-    tokens = text.split(" ")
+    tokens = text.split()
     valid_tokens = []
     for token in tokens:
         if token:
@@ -174,4 +185,15 @@ def tf_command(doc_id: int, term: str):
     print(count)
 
 def idf_command(term: str):
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except ValueError as e:
+        print("Failed to load inverted index: ", e)
+
+    idf_score = idx.get_idf(term)
+
+    print(f"Inverse document frequency of '{term}': {idf_score:.2f}")
+
+def tfidf_command(doc_id: int, term: str):
     pass

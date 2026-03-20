@@ -4,7 +4,7 @@ import os
 import pickle
 from collections import Counter, defaultdict
 from nltk.stem import PorterStemmer
-from .search_utils import CACHE_DIR, DEFAULT_SEARCH_LIST, load_movies, load_stopwords
+from .search_utils import BM25_K1, CACHE_DIR, DEFAULT_SEARCH_LIST, load_movies, load_stopwords
 
 
 class InvertedIndex:
@@ -119,8 +119,14 @@ class InvertedIndex:
         doc_count = len(self.docmap)
         df = len(self.index[token])
 
-        # Formula = log((N - df + 0.5) / (df + 0.5) + 1)
+        # Formula -> log((N - df + 0.5) / (df + 0.5) + 1)
         return math.log((doc_count - df + 0.5) / (df + 0.5) + 1)
+    
+    def get_bm25_tf(self, doc_id: int, term: str, k1=BM25_K1):
+        tf = self.get_tf(doc_id, term)
+
+        # Formula -> (tf * (k1 + 1)) / (tf + k1)
+        return (tf * (k1 + 1) / (tf + k1))
 
 
 def build_command() -> None:
@@ -225,3 +231,12 @@ def bm25_idf_command(term: str):
         print("Failed to load inverted index: ", e)
 
     return idx.get_bm25_idf(term)
+
+def bm25_tf_command(doc_id: int, term: str, k1: float):
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except ValueError as e:
+        print("Failed to load inverted index: ", e)
+
+    return idx.get_bm25_tf(doc_id, term, k1)

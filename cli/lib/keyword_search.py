@@ -103,7 +103,12 @@ class InvertedIndex:
         doc_count = len(self.docmap)
         match_count = len(self.index.get(tokens[0], set()))
         return math.log((doc_count + 1) / (match_count + 1))
-
+    
+    def get_tf_idf(self, doc_id: int, term: str):
+        """returns the product of tf and idf"""
+        tf = self.get_tf(doc_id, term)
+        idf = self.get_idf(term)
+        return tf * idf
 
 
 def build_command() -> None:
@@ -180,9 +185,7 @@ def tf_command(doc_id: int, term: str):
     except ValueError as e:
         print("Failed to load inverted index: ", e)
 
-    count = idx.get_tf(doc_id, term)
-
-    print(count)
+    return idx.get_tf(doc_id, term)
 
 def idf_command(term: str):
     idx = InvertedIndex()
@@ -191,9 +194,13 @@ def idf_command(term: str):
     except ValueError as e:
         print("Failed to load inverted index: ", e)
 
-    idf_score = idx.get_idf(term)
+    return idx.get_idf(term)
 
-    print(f"Inverse document frequency of '{term}': {idf_score:.2f}")
+def tf_idf_command(doc_id: int, term: str):
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except ValueError as e:
+        print("Failed to load inverted index: ", e)
 
-def tfidf_command(doc_id: int, term: str):
-    pass
+    return idx.get_tf_idf(doc_id, term)
